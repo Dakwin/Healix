@@ -3,10 +3,12 @@ import 'abc_assessment.dart';
 
 
 void main() {
-  runApp(HealixApp());
+  runApp(const HealixApp());
 }
 
 class HealixApp extends StatelessWidget {
+  const HealixApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -14,45 +16,47 @@ class HealixApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.teal,
       ),
-      home: MainScreen(),
+      home: const MainScreen(),
     );
   }
 }
 
 class MainScreen extends StatelessWidget {
+  const MainScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Healix - Combat Medic Assistant'),
+        title: const Text('Healix - Combat Medic Assistant'),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
+            const Text(
               'Welcome to Healix',
               style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 20.0),
+            const SizedBox(height: 20.0),
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ABCAssessmentScreen()),
+                  MaterialPageRoute(builder: (context) => const ABCAssessmentScreen()),
                 );
               },
-              child: Text('Start ABC Assessment'),
+              child: const Text('Start ABC Assessment'),
             ),
-            SizedBox(height: 20.0),
+            const SizedBox(height: 20.0),
             ElevatedButton(
               onPressed: () {
                 // Placeholder for additional features
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('More features coming soon!')),
+                  const SnackBar(content: Text('More features coming soon!')),
                 );
               },
-              child: Text('Other Features'),
+              child: const Text('Other Features'),
             ),
           ],
         ),
