@@ -28,8 +28,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Specify any assets used in your project.
-  assets:
-    - assets/images/
-    - assets/sounds/
+  # # Specify any assets used in your project.
+  # assets:
+  #   - assets/images/
+  #   - assets/sounds/
 
