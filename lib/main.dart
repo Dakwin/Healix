@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'abc_assessment.dart';
+
 
 void main() {
   runApp(HealixApp());
@@ -35,9 +37,9 @@ class MainScreen extends StatelessWidget {
             SizedBox(height: 20.0),
             ElevatedButton(
               onPressed: () {
-                // Placeholder for the ABC Guidance Screen
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('ABC Guidance coming soon!')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ABCAssessmentScreen()),
                 );
               },
               child: Text('Start ABC Assessment'),
