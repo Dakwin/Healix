@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
+import 'dart:async';
 
 class ABCAssessmentScreen extends StatefulWidget {
   const ABCAssessmentScreen({Key? key}) : super(key: key);
@@ -27,33 +28,62 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
     _speech = stt.SpeechToText();
   }
 
-  void _startListening() async {
-    // Request microphone permission
-    var status = await Permission.microphone.request();
 
-    if (status.isGranted) {
-      bool available = await _speech.initialize(
-        onStatus: (val) => _onSpeechStatus(val),
-        onError: (val) => _onSpeechError(val as String),
-      );
+bool _commandCooldown = false; // Cooldown flag
 
-      if (available) {
-        setState(() {
-          _isListening = true;
-        });
-        _speech.listen(
-          onResult: (val) => setState(() {
-            _voiceInput = val.recognizedWords;
-          }),
-          localeId: 'he-IL', // Set language to Hebrew
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Microphone permission is required to use this feature')),
+void _startListening() async {
+  var status = await Permission.microphone.request();
+
+  if (status.isGranted) {
+    bool available = await _speech.initialize(
+      onStatus: (val) => _onSpeechStatus(val),
+      onError: (val) => _onSpeechError(val as String),
+    );
+
+    if (available) {
+      setState(() {
+        _isListening = true;
+      });
+      _speech.listen(
+        onResult: (val) {
+          final recognizedWords = val.recognizedWords.toLowerCase();
+
+          if (recognizedWords.contains('עבור') && !_commandCooldown) {
+            _handleCommand(() => nextStep());
+          } else if (recognizedWords.contains('אחורה') && !_commandCooldown) {
+            _handleCommand(() => previousStep());
+          } else {
+            setState(() {
+              _voiceInput = recognizedWords;
+            });
+          }
+        },
+        localeId: 'he-IL', // Set language to Hebrew
       );
     }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Microphone permission is required to use this feature')),
+    );
   }
+}
+
+void _handleCommand(Function command) {
+  setState(() {
+    _commandCooldown = true; // Set the cooldown flag
+  });
+
+  command(); // Execute the command (nextStep or previousStep)
+
+  // Set a cooldown period before allowing another command
+  Timer(const Duration(seconds: 2), () {
+    setState(() {
+      _commandCooldown = false; // Reset the cooldown flag after 2 seconds
+    });
+  });
+}
+
+
 
   void _stopListening() {
     _speech.stop();
