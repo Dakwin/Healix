@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:permission_handler/permission_handler.dart';
 
 class ABCAssessmentScreen extends StatefulWidget {
   const ABCAssessmentScreen({Key? key}) : super(key: key);
@@ -26,26 +27,54 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
     _speech = stt.SpeechToText();
   }
 
-void _startListening() async {
-  bool available = await _speech.initialize(
-    onStatus: (val) => print('onStatus: $val'),
-    onError: (val) => print('onError: $val'),
-  );
+  void _startListening() async {
+    // Request microphone permission
+    var status = await Permission.microphone.request();
 
-  if (available) {
-    setState(() => _isListening = true);
-    _speech.listen(
-      onResult: (val) => setState(() {
-        _voiceInput = val.recognizedWords;
-      }),
-      localeId: 'he-IL', // Specify Hebrew language code here
-    );
+    if (status.isGranted) {
+      bool available = await _speech.initialize(
+        onStatus: (val) => _onSpeechStatus(val),
+        onError: (val) => _onSpeechError(val as String),
+      );
+
+      if (available) {
+        setState(() {
+          _isListening = true;
+        });
+        _speech.listen(
+          onResult: (val) => setState(() {
+            _voiceInput = val.recognizedWords;
+          }),
+          localeId: 'he-IL', // Set language to Hebrew
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Microphone permission is required to use this feature')),
+      );
+    }
   }
-}
 
   void _stopListening() {
-    setState(() => _isListening = false);
     _speech.stop();
+    setState(() {
+      _isListening = false;
+    });
+  }
+
+  // Method to handle speech status changes
+  void _onSpeechStatus(String status) {
+    setState(() {
+      _isListening = status == 'listening';
+    });
+  }
+
+  // Method to handle speech recognition errors
+  void _onSpeechError(String error) {
+    setState(() {
+      _isListening = false;
+    });
+    print('Speech recognition error: $error');
   }
 
   void nextStep() {
