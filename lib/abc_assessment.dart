@@ -1,3 +1,4 @@
+import 'package:speech_to_text/speech_recognition_error.dart' as sre;
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
@@ -22,68 +23,77 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
   bool _isListening = false;
   String _voiceInput = '';
 
+  DateTime? _lastCommandTime; // Timestamp for last command execution
+
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
   }
 
+  void _startListening() async {
+    if (!_isListening) {
+      var status = await Permission.microphone.status;
 
-bool _commandCooldown = false; // Cooldown flag
+      if (!status.isGranted) {
+        status = await Permission.microphone.request();
+      }
 
-void _startListening() async {
-  var status = await Permission.microphone.request();
+      if (status.isGranted) {
+        bool available = await _speech.initialize(
+          onStatus: (val) => _onSpeechStatus(val),
+          onError: (val) => _onSpeechError(val),
+        );
 
-  if (status.isGranted) {
-    bool available = await _speech.initialize(
-      onStatus: (val) => _onSpeechStatus(val),
-      onError: (val) => _onSpeechError(val as String),
-    );
+        if (available) {
+          setState(() {
+            _isListening = true;
+          });
+          _speech.listen(
+            onResult: (val) {
+              final recognizedWords = val.recognizedWords.toLowerCase().trim();
+              print('Recognized Words: "$recognizedWords"');
 
-    if (available) {
-      setState(() {
-        _isListening = true;
-      });
-      _speech.listen(
-        onResult: (val) {
-          final recognizedWords = val.recognizedWords.toLowerCase();
+              // Handle commands for navigation on both interim and final results
+              if (recognizedWords.contains('עבור')) {
+                print('Command detected: "עבור"');
 
-          if (recognizedWords.contains('עבור') && !_commandCooldown) {
-            _handleCommand(() => nextStep());
-          } else if (recognizedWords.contains('אחורה') && !_commandCooldown) {
-            _handleCommand(() => previousStep());
-          } else {
-            setState(() {
-              _voiceInput = recognizedWords;
-            });
-          }
-        },
-        localeId: 'he-IL', // Set language to Hebrew
-      );
+                // Use timestamp to prevent multiple executions
+                _handleCommand(nextStep);
+                return;
+              } else if (recognizedWords.contains('אחורה')) {
+                print('Command detected: "אחורה"');
+
+                // Use timestamp to prevent multiple executions
+                _handleCommand(previousStep);
+                return;
+              } else {
+                print('No command detected.');
+              }
+
+              // Save the recognized input if it's not a command and it's a final result
+              if (val.finalResult) {
+                setState(() {
+                  _voiceInput = recognizedWords;
+                  print('Voice input updated to: $_voiceInput');
+                });
+              }
+            },
+            localeId: 'he-IL',
+            listenMode: stt.ListenMode.dictation,
+          );
+        } else {
+          print('Speech recognition not available');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('Microphone permission is required to use this feature')),
+        );
+      }
     }
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Microphone permission is required to use this feature')),
-    );
   }
-}
-
-void _handleCommand(Function command) {
-  setState(() {
-    _commandCooldown = true; // Set the cooldown flag
-  });
-
-  command(); // Execute the command (nextStep or previousStep)
-
-  // Set a cooldown period before allowing another command
-  Timer(const Duration(seconds: 2), () {
-    setState(() {
-      _commandCooldown = false; // Reset the cooldown flag after 2 seconds
-    });
-  });
-}
-
-
 
   void _stopListening() {
     _speech.stop();
@@ -94,17 +104,31 @@ void _handleCommand(Function command) {
 
   // Method to handle speech status changes
   void _onSpeechStatus(String status) {
+    print('Speech status: $status');
     setState(() {
       _isListening = status == 'listening';
     });
   }
 
   // Method to handle speech recognition errors
-  void _onSpeechError(String error) {
+  void _onSpeechError(sre.SpeechRecognitionError error) {
     setState(() {
       _isListening = false;
     });
-    print('Speech recognition error: $error');
+    print('Speech recognition error: ${error.errorMsg}');
+  }
+
+  void _handleCommand(Function command) {
+    final currentTime = DateTime.now();
+    if (_lastCommandTime == null ||
+        currentTime.difference(_lastCommandTime!) > Duration(seconds: 1)) {
+      _lastCommandTime = currentTime;
+      print('Executing command.');
+
+      command(); // Execute the command
+    } else {
+      print('Command execution skipped due to cooldown.');
+    }
   }
 
   void nextStep() {
@@ -112,10 +136,12 @@ void _handleCommand(Function command) {
       if (currentStep < steps.length - 1) {
         currentStep++;
         _voiceInput = ''; // Clear voice input for next step
+        print('Moved to step $currentStep');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Assessment Completed!')),
         );
+        print('Assessment Completed!');
       }
     });
   }
@@ -125,6 +151,7 @@ void _handleCommand(Function command) {
       if (currentStep > 0) {
         currentStep--;
         _voiceInput = ''; // Clear voice input for previous step
+        print('Moved back to step $currentStep');
       }
     });
   }
@@ -142,7 +169,8 @@ void _handleCommand(Function command) {
           children: [
             Text(
               steps[currentStep],
-              style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+              style:
+                  const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20.0),
