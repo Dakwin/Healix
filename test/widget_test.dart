@@ -4,7 +4,6 @@
 // For example, it verifies that the "Start ABC Assessment" button is present, and interactions
 // like clicking buttons change the UI as expected.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:healix/main.dart';

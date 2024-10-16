@@ -2,10 +2,9 @@ import 'package:speech_to_text/speech_recognition_error.dart' as sre;
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:async';
 
 class ABCAssessmentScreen extends StatefulWidget {
-  const ABCAssessmentScreen({Key? key}) : super(key: key);
+  const ABCAssessmentScreen({super.key});
 
   @override
   ABCAssessmentScreenState createState() => ABCAssessmentScreenState();
@@ -118,18 +117,25 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
     print('Speech recognition error: ${error.errorMsg}');
   }
 
-  void _handleCommand(Function command) {
-    final currentTime = DateTime.now();
-    if (_lastCommandTime == null ||
-        currentTime.difference(_lastCommandTime!) > Duration(seconds: 1)) {
-      _lastCommandTime = currentTime;
-      print('Executing command.');
+void _handleCommand(Function command) {
+  final currentTime = DateTime.now();
+  if (_lastCommandTime == null ||
+      currentTime.difference(_lastCommandTime!) > Duration(seconds: 1)) {
+    _lastCommandTime = currentTime;
+    print('Executing command.');
 
-      command(); // Execute the command
-    } else {
-      print('Command execution skipped due to cooldown.');
-    }
+    _stopListening(); // Stop listening before executing the command
+
+    command(); // Execute the command (e.g., move to the next step)
+
+    // Restart listening after a brief delay
+    Future.delayed(Duration(milliseconds: 500), () {
+      _startListening();
+    });
+  } else {
+    print('Command execution skipped due to cooldown.');
   }
+}
 
   void nextStep() {
     setState(() {
