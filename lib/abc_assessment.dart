@@ -12,17 +12,47 @@ class ABCAssessmentScreen extends StatefulWidget {
 
 class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
   int currentStep = 0;
-  final List<String> steps = [
-    "Airway: Ensure the airway is clear and open.",
-    "Breathing: Check if the patient is breathing adequately.",
-    "Circulation: Assess circulation and check for major bleeding."
+
+  final List<Map<String, dynamic>> steps = [
+    {
+      'title': 'S: וודא בטיחות סביבתית לך ולמטופל.',
+      'instructions': [
+        'בדוק את הסביבה לאיומים פוטנציאליים.',
+        'לבש ציוד מגן אישי.',
+        'וודא שהמטופל נמצא במקום בטוח.',
+      ],
+    },
+    {
+      'title': 'A: פתח נתיב אוויר והסר חסימות.',
+      'instructions': [
+        'בדוק אם יש חסימה בנתיב האוויר.',
+        'הטה את ראש המטופל לאחור כדי לפתוח את נתיב האוויר.',
+        'הסר חפצים זרים מהפה או מהגרון.',
+      ],
+    },
+    {
+      'title': 'B: בדוק את הנשימה והבטח חמצון.',
+      'instructions': [
+        'הקשב ונטר את נשימת המטופל.',
+        'השתמש במסכת חמצן במידת הצורך.',
+        'התחל הנשמה מלאכותית אם אין נשימה.',
+      ],
+    },
+    {
+      'title': 'C: בדוק את הדופק וטפל בדימום.',
+      'instructions': [
+        'בדוק את הדופק במפרק כף היד או בצוואר.',
+        'אם יש דימום, לחץ על האזור המדמם.',
+        'השתמש בתחבושת לחץ או חסם עורקים במידת הצורך.',
+      ],
+    },
   ];
 
-  late stt.SpeechToText _speech; // Instance of SpeechToText
+  late stt.SpeechToText _speech;
   bool _isListening = false;
   String _voiceInput = '';
 
-  DateTime? _lastCommandTime; // Timestamp for last command execution
+  DateTime? _lastCommandTime;
 
   @override
   void initState() {
@@ -30,79 +60,70 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
     _speech = stt.SpeechToText();
   }
 
-void _startListening() async {
-  if (!_isListening) {
-    var status = await Permission.microphone.status;
+  void _startListening() async {
+    if (!_isListening) {
+      var status = await Permission.microphone.status;
 
-    if (!status.isGranted) {
-      status = await Permission.microphone.request();
-    }
-
-    if (status.isGranted) {
-      bool available = await _speech.initialize(
-        onStatus: (val) => _onSpeechStatus(val),
-        onError: (val) => _onSpeechError(val),
-      );
-
-      if (available) {
-        setState(() {
-          _isListening = true;
-        });
-
-        // Create an instance of SpeechListenOptions without 'localeId'
-        stt.SpeechListenOptions options = stt.SpeechListenOptions(
-          listenMode: stt.ListenMode.dictation,
-          partialResults: true, // Include if needed
-          onDevice: false,      // Include if needed
-        );
-
-        _speech.listen(
-          onResult: (val) {
-            final recognizedWords = val.recognizedWords.toLowerCase().trim();
-            print('Recognized Words: "$recognizedWords"');
-
-            // Handle commands for navigation on both interim and final results
-            if (recognizedWords.contains('עבור')) {
-              print('Command detected: "עבור"');
-
-              // Use timestamp to prevent multiple executions
-              _handleCommand(nextStep);
-              return;
-            } else if (recognizedWords.contains('אחורה')) {
-              print('Command detected: "אחורה"');
-
-              // Use timestamp to prevent multiple executions
-              _handleCommand(previousStep);
-              return;
-            } else {
-              print('No command detected.');
-            }
-
-            // Save the recognized input if it's not a command and it's a final result
-            if (val.finalResult) {
-              setState(() {
-                _voiceInput = recognizedWords;
-                print('Voice input updated to: $_voiceInput');
-              });
-            }
-          },
-          localeId: 'he-IL',      // Pass 'localeId' directly here
-          listenOptions: options, // Use the options instance
-        );
-      } else {
-        print('Speech recognition not available');
+      if (!status.isGranted) {
+        status = await Permission.microphone.request();
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Microphone permission is required to use this feature'),
-        ),
-      );
+
+      if (status.isGranted) {
+        bool available = await _speech.initialize(
+          onStatus: (val) => _onSpeechStatus(val),
+          onError: (val) => _onSpeechError(val),
+        );
+
+        if (available) {
+          setState(() {
+            _isListening = true;
+          });
+
+          stt.SpeechListenOptions options = stt.SpeechListenOptions(
+            listenMode: stt.ListenMode.dictation,
+            partialResults: true,
+          );
+
+          _speech.listen(
+            onResult: (val) {
+              final recognizedWords =
+                  val.recognizedWords.toLowerCase().trim();
+              print('Recognized Words: "$recognizedWords"');
+
+              if (recognizedWords.contains('עבור')) {
+                print('Command detected: "עבור"');
+                _handleCommand(nextStep);
+                return;
+              } else if (recognizedWords.contains('אחורה')) {
+                print('Command detected: "אחורה"');
+                _handleCommand(previousStep);
+                return;
+              } else {
+                print('No command detected.');
+              }
+
+              if (val.finalResult) {
+                setState(() {
+                  _voiceInput = recognizedWords;
+                  print('Voice input updated to: $_voiceInput');
+                });
+              }
+            },
+            localeId: 'he-IL',
+            listenOptions: options,
+          );
+        } else {
+          print('Speech recognition not available');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('דרושה הרשאת מיקרופון כדי להשתמש בתכונה זו'),
+          ),
+        );
+      }
     }
   }
-}
-
-
 
   void _stopListening() {
     _speech.stop();
@@ -111,7 +132,6 @@ void _startListening() async {
     });
   }
 
-  // Method to handle speech status changes
   void _onSpeechStatus(String status) {
     print('Speech status: $status');
     setState(() {
@@ -119,7 +139,6 @@ void _startListening() async {
     });
   }
 
-  // Method to handle speech recognition errors
   void _onSpeechError(sre.SpeechRecognitionError error) {
     setState(() {
       _isListening = false;
@@ -127,35 +146,35 @@ void _startListening() async {
     print('Speech recognition error: ${error.errorMsg}');
   }
 
-void _handleCommand(Function command) {
-  final currentTime = DateTime.now();
-  if (_lastCommandTime == null ||
-      currentTime.difference(_lastCommandTime!) > Duration(seconds: 1)) {
-    _lastCommandTime = currentTime;
-    print('Executing command.');
+  void _handleCommand(Function command) {
+    final currentTime = DateTime.now();
+    if (_lastCommandTime == null ||
+        currentTime.difference(_lastCommandTime!) > Duration(seconds: 1)) {
+      _lastCommandTime = currentTime;
+      print('Executing command.');
 
-    _stopListening(); // Stop listening before executing the command
+      _stopListening(); // Stop listening before executing the command
 
-    command(); // Execute the command (e.g., move to the next step)
+      command(); // Execute the command
 
-    // Restart listening after a brief delay
-    Future.delayed(Duration(milliseconds: 500), () {
-      _startListening();
-    });
-  } else {
-    print('Command execution skipped due to cooldown.');
+      // Restart listening after a brief delay
+      Future.delayed(Duration(milliseconds: 500), () {
+        _startListening();
+      });
+    } else {
+      print('Command execution skipped due to cooldown.');
+    }
   }
-}
 
   void nextStep() {
     setState(() {
       if (currentStep < steps.length - 1) {
         currentStep++;
-        _voiceInput = ''; // Clear voice input for next step
+        _voiceInput = '';
         print('Moved to step $currentStep');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Assessment Completed!')),
+          const SnackBar(content: Text('ההערכה הושלמה!')),
         );
         print('Assessment Completed!');
       }
@@ -166,7 +185,7 @@ void _handleCommand(Function command) {
     setState(() {
       if (currentStep > 0) {
         currentStep--;
-        _voiceInput = ''; // Clear voice input for previous step
+        _voiceInput = '';
         print('Moved back to step $currentStep');
       }
     });
@@ -174,49 +193,89 @@ void _handleCommand(Function command) {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('ABC Assessment'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              steps[currentStep],
-              style:
-                  const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20.0),
-            if (_voiceInput.isNotEmpty)
+    final currentStepData = steps[currentStep];
+    final String title = currentStepData['title'];
+    final List<String> instructions = currentStepData['instructions'];
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'הערכה ABC',
+            textAlign: TextAlign.center, // Center the AppBar title
+          ),
+          centerTitle: true, // Ensure the title is centered
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ListView(
+            children: [
               Text(
-                'Voice Input: $_voiceInput',
-                style: const TextStyle(fontSize: 16.0),
-                textAlign: TextAlign.center,
+                title,
+                style: TextStyle(
+                  fontSize: 24.0,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center, // Center the title text
               ),
-            const SizedBox(height: 40.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton(
-                  onPressed: previousStep,
-                  child: const Text('Previous'),
+              const SizedBox(height: 20.0),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: instructions.map((instruction) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '• ',
+                          style: TextStyle(fontSize: 20.0),
+                        ),
+                        Expanded(
+                          child: Text(
+                            instruction,
+                            style: TextStyle(fontSize: 20.0),
+                            textAlign: TextAlign.right, // Right-align instructions
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20.0),
+              if (_voiceInput.isNotEmpty)
+                Text(
+                  'קלט קולי: $_voiceInput',
+                  style: const TextStyle(fontSize: 16.0),
+                  textAlign: TextAlign.right, // Right-align voice input text
                 ),
-                ElevatedButton(
-                  onPressed: nextStep,
-                  child: const Text('Next'),
+              const SizedBox(height: 40.0),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: previousStep,
+                    child: const Text('אחורה'),
+                  ),
+                  ElevatedButton(
+                    onPressed: nextStep,
+                    child: const Text('הבא'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20.0),
+              ElevatedButton.icon(
+                onPressed: _isListening ? _stopListening : _startListening,
+                icon: Icon(_isListening ? Icons.mic_off : Icons.mic),
+                label: Text(
+                  _isListening ? 'הפסק האזנה' : 'התחל האזנה',
+                  textAlign: TextAlign.right, // Right-align button text
                 ),
-              ],
-            ),
-            const SizedBox(height: 20.0),
-            ElevatedButton.icon(
-              onPressed: _isListening ? _stopListening : _startListening,
-              icon: Icon(_isListening ? Icons.mic_off : Icons.mic),
-              label: Text(_isListening ? 'Stop Listening' : 'Start Listening'),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
