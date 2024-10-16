@@ -203,79 +203,159 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
         appBar: AppBar(
           title: Text(
             'הערכה ABC',
-            textAlign: TextAlign.center, // Center the AppBar title
+            textAlign: TextAlign.center,
           ),
-          centerTitle: true, // Ensure the title is centered
+          centerTitle: true,
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ListView(
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 24.0,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center, // Center the title text
-              ),
-              const SizedBox(height: 20.0),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: instructions.map((instruction) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '• ',
-                          style: TextStyle(fontSize: 20.0),
-                        ),
-                        Expanded(
+        body: Row(
+          children: [
+            // Side bar (stepper) remains on the right side
+            Container(
+              width: 60,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: steps.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  Map<String, dynamic> step = entry.value;
+                  String stepLetter = step['title'].split(':')[0]; // Extract 'S', 'A', 'B', 'C'
+
+                  bool isActive = index == currentStep;
+                  bool isCompleted = index < currentStep;
+
+                  return Column(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            currentStep = index;
+                            _voiceInput = '';
+                            print('Moved to step $currentStep via side bar');
+                          });
+                        },
+                        child: CircleAvatar(
+                          radius: 16,
+                          backgroundColor: isActive
+                              ? Colors.blue
+                              : isCompleted ? Colors.green : Colors.grey,
                           child: Text(
-                            instruction,
-                            style: TextStyle(fontSize: 20.0),
-                            textAlign: TextAlign.right, // Right-align instructions
+                            stepLetter,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      if (index != steps.length - 1)
+                        Container(
+                          height: 40,
+                          width: 2,
+                          color: Colors.grey,
+                        ),
+                    ],
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 20.0),
-              if (_voiceInput.isNotEmpty)
-                Text(
-                  'קלט קולי: $_voiceInput',
-                  style: const TextStyle(fontSize: 16.0),
-                  textAlign: TextAlign.right, // Right-align voice input text
-                ),
-              const SizedBox(height: 40.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ),
+            // Main content and buttons
+            Expanded(
+              child: Column(
                 children: [
-                  ElevatedButton(
-                    onPressed: previousStep,
-                    child: const Text('אחורה'),
+                  // Main content with scrolling
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 24.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 20.0),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: instructions.map((instruction) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '• ',
+                                        style: TextStyle(fontSize: 20.0),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          instruction,
+                                          style: TextStyle(fontSize: 20.0),
+                                          textAlign: TextAlign.right,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 20.0),
+                            if (_voiceInput.isNotEmpty)
+                              Text(
+                                'קלט קולי: $_voiceInput',
+                                style: const TextStyle(fontSize: 16.0),
+                                textAlign: TextAlign.right,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  ElevatedButton(
-                    onPressed: nextStep,
-                    child: const Text('הבא'),
+                  // Buttons at the bottom
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: previousStep,
+                                child: const Text('אחורה'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: nextStep,
+                                child: const Text('הבא'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Spacer to push 'התחל האזנה' to the bottom
+                        const SizedBox(height: 10),
+                      ],
+                    ),
+                  ),
+                  // 'התחל האזנה' button at the very bottom
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: ElevatedButton.icon(
+                      onPressed: _isListening ? _stopListening : _startListening,
+                      icon: Icon(_isListening ? Icons.mic_off : Icons.mic),
+                      label: Text(
+                        _isListening ? 'הפסק האזנה' : 'התחל האזנה',
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20.0),
-              ElevatedButton.icon(
-                onPressed: _isListening ? _stopListening : _startListening,
-                icon: Icon(_isListening ? Icons.mic_off : Icons.mic),
-                label: Text(
-                  _isListening ? 'הפסק האזנה' : 'התחל האזנה',
-                  textAlign: TextAlign.right, // Right-align button text
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
