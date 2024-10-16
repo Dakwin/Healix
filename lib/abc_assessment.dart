@@ -15,31 +15,31 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
 
   final List<Map<String, dynamic>> steps = [
     {
-      'title': 'S: וודא בטיחות סביבתית לך ולמטופל.',
+      'title': 'S: Safety',
       'instructions': [
-        'בדוק את הסביבה לאיומים פוטנציאליים.',
-        'לבש ציוד מגן אישי.',
-        'וודא שהמטופל נמצא במקום בטוח.',
+        'סביבת טיפול בטוחה',
+        'ציוד מגן אישי',
+        'עצירת דימומים פורצים',
       ],
     },
     {
-      'title': 'A: פתח נתיב אוויר והסר חסימות.',
+      'title': 'A: Airway',
       'instructions': [
-        'בדוק אם יש חסימה בנתיב האוויר.',
-        'הטה את ראש המטופל לאחור כדי לפתוח את נתיב האוויר.',
-        'הסר חפצים זרים מהפה או מהגרון.',
+        'בדיקת הכרה: קול וכאב',
+        'התרשמות מנתיב אוויר',
+        'סילוק הפרשות ועצמים זרים',
+        'פתיחת נתיב אוויר',
       ],
     },
     {
-      'title': 'B: בדוק את הנשימה והבטח חמצון.',
+      'title': 'B: Breathing',
       'instructions': [
-        'הקשב ונטר את נשימת המטופל.',
-        'השתמש במסכת חמצן במידת הצורך.',
-        'התחל הנשמה מלאכותית אם אין נשימה.',
+        'הפשטת בית-חזה והתרשמות',
+        'ספירת נשימות (חצי דקה)',
       ],
     },
     {
-      'title': 'C: בדוק את הדופק וטפל בדימום.',
+      'title': 'C: Circulation',
       'instructions': [
         'בדוק את הדופק במפרק כף היד או בצוואר.',
         'אם יש דימום, לחץ על האזור המדמם.',
@@ -209,9 +209,9 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
         ),
         body: Row(
           children: [
-            // Side bar (stepper) remains on the right side
+            // Side bar (stepper) with increased width
             Container(
-              width: 60,
+              width: 100, // Stepper bar width increased
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: steps.asMap().entries.map((entry) {
@@ -233,7 +233,7 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
                           });
                         },
                         child: CircleAvatar(
-                          radius: 16,
+                          radius: 24, // Increased size of step indicators
                           backgroundColor: isActive
                               ? Colors.blue
                               : isCompleted ? Colors.green : Colors.grey,
@@ -242,14 +242,15 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
+                              fontSize: 20, // Increased font size of letters
                             ),
                           ),
                         ),
                       ),
                       if (index != steps.length - 1)
                         Container(
-                          height: 40,
-                          width: 2,
+                          height: 60, // Increased space between steps
+                          width: 4, // Increased thickness of line
                           color: Colors.grey,
                         ),
                     ],
@@ -335,7 +336,6 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
                             ),
                           ],
                         ),
-                        // Spacer to push 'התחל האזנה' to the bottom
                         const SizedBox(height: 10),
                       ],
                     ),
