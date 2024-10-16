@@ -30,69 +30,79 @@ class ABCAssessmentScreenState extends State<ABCAssessmentScreen> {
     _speech = stt.SpeechToText();
   }
 
-  void _startListening() async {
-    if (!_isListening) {
-      var status = await Permission.microphone.status;
+void _startListening() async {
+  if (!_isListening) {
+    var status = await Permission.microphone.status;
 
-      if (!status.isGranted) {
-        status = await Permission.microphone.request();
-      }
+    if (!status.isGranted) {
+      status = await Permission.microphone.request();
+    }
 
-      if (status.isGranted) {
-        bool available = await _speech.initialize(
-          onStatus: (val) => _onSpeechStatus(val),
-          onError: (val) => _onSpeechError(val),
+    if (status.isGranted) {
+      bool available = await _speech.initialize(
+        onStatus: (val) => _onSpeechStatus(val),
+        onError: (val) => _onSpeechError(val),
+      );
+
+      if (available) {
+        setState(() {
+          _isListening = true;
+        });
+
+        // Create an instance of SpeechListenOptions without 'localeId'
+        stt.SpeechListenOptions options = stt.SpeechListenOptions(
+          listenMode: stt.ListenMode.dictation,
+          partialResults: true, // Include if needed
+          onDevice: false,      // Include if needed
         );
 
-        if (available) {
-          setState(() {
-            _isListening = true;
-          });
-          _speech.listen(
-            onResult: (val) {
-              final recognizedWords = val.recognizedWords.toLowerCase().trim();
-              print('Recognized Words: "$recognizedWords"');
+        _speech.listen(
+          onResult: (val) {
+            final recognizedWords = val.recognizedWords.toLowerCase().trim();
+            print('Recognized Words: "$recognizedWords"');
 
-              // Handle commands for navigation on both interim and final results
-              if (recognizedWords.contains('עבור')) {
-                print('Command detected: "עבור"');
+            // Handle commands for navigation on both interim and final results
+            if (recognizedWords.contains('עבור')) {
+              print('Command detected: "עבור"');
 
-                // Use timestamp to prevent multiple executions
-                _handleCommand(nextStep);
-                return;
-              } else if (recognizedWords.contains('אחורה')) {
-                print('Command detected: "אחורה"');
+              // Use timestamp to prevent multiple executions
+              _handleCommand(nextStep);
+              return;
+            } else if (recognizedWords.contains('אחורה')) {
+              print('Command detected: "אחורה"');
 
-                // Use timestamp to prevent multiple executions
-                _handleCommand(previousStep);
-                return;
-              } else {
-                print('No command detected.');
-              }
+              // Use timestamp to prevent multiple executions
+              _handleCommand(previousStep);
+              return;
+            } else {
+              print('No command detected.');
+            }
 
-              // Save the recognized input if it's not a command and it's a final result
-              if (val.finalResult) {
-                setState(() {
-                  _voiceInput = recognizedWords;
-                  print('Voice input updated to: $_voiceInput');
-                });
-              }
-            },
-            localeId: 'he-IL',
-            listenMode: stt.ListenMode.dictation,
-          );
-        } else {
-          print('Speech recognition not available');
-        }
+            // Save the recognized input if it's not a command and it's a final result
+            if (val.finalResult) {
+              setState(() {
+                _voiceInput = recognizedWords;
+                print('Voice input updated to: $_voiceInput');
+              });
+            }
+          },
+          localeId: 'he-IL',      // Pass 'localeId' directly here
+          listenOptions: options, // Use the options instance
+        );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content:
-                  Text('Microphone permission is required to use this feature')),
-        );
+        print('Speech recognition not available');
       }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Microphone permission is required to use this feature'),
+        ),
+      );
     }
   }
+}
+
+
 
   void _stopListening() {
     _speech.stop();
